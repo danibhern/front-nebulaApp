@@ -87,7 +87,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = " Este mes de Octubre prueba nuestro café espresso hecho con granos 100% arábica.",
+                        text = " Este mes de Diciembre prueba nuestro café espresso hecho con granos 100% arábica.",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(10.dp))

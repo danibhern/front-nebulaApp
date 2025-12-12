@@ -1,5 +1,6 @@
 package com.example.appnebula.ui.registro
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,7 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.* // Importa todo de Material3, es más limpio
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -24,15 +25,28 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- 1. IMPORT CORRECTO para collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.appnebula.data.AuthRepository
 import com.example.appnebula.data.SessionManager
+import com.example.appnebula.registro.FeatureThatRequiresCameraPermission
 import com.example.appnebula.ui.theme.DarkPurple
 import com.example.appnebula.viewmodel.UserViewModel
 import com.example.appnebula.viewmodel.UserViewModelFactory
 import kotlinx.coroutines.delay
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import com.example.appnebula.ComposeFileProvider
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +55,17 @@ fun RegisterScreen(
 ) {
     val context = LocalContext.current
 
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                Toast.makeText(context, "Foto capturada con éxito", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
     val viewModel: UserViewModel = viewModel(
         factory = UserViewModelFactory(
             authRepository = AuthRepository(context.applicationContext),
@@ -48,15 +73,8 @@ fun RegisterScreen(
         )
     )
 
-    // Usamos el import correcto, que es más seguro para el ciclo de vida
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Ya no necesitas estos 'collectAsState' individuales, 'estado' ya tiene todo
-    // val nombre by estado.name.collectAsState(initial = "")
-    // val email by estado.email.collectAsState(initial = "")
-    // val password by estado.password.collectAsState(initial = "")
-
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(estado.mensaje) {
@@ -94,7 +112,34 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // 2. Text ahora usará el de Material3, ya no estará en rojo
+
+                if (imageUri != null) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = imageUri),
+                            contentDescription = "Foto de perfil capturada",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                FeatureThatRequiresCameraPermission(
+                    onPermissionGranted = {
+                        val uri = ComposeFileProvider.getImageUri(context)
+                        imageUri = uri
+                        cameraLauncher.launch(uri)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Crear Cuenta",
                     fontSize = 32.sp,
@@ -105,7 +150,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 OutlinedTextField(
-                    value = estado.name, // Usamos directamente el estado
+                    value = estado.name,
                     onValueChange = { viewModel.onNombreChange(it) },
                     label = { Text("Nombre", color = Color.White) },
                     singleLine = true,
@@ -152,7 +197,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = estado.password, // Usamos directamente el estado
+                    value = estado.password,
                     onValueChange = { viewModel.onClaveChange(it) },
                     label = { Text("Contraseña", color = Color.White) },
                     singleLine = true,

@@ -105,6 +105,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     // --- TESTS UNITARIOS ---
     testImplementation("junit:junit:4.13.2")
