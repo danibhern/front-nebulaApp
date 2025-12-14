@@ -40,10 +40,26 @@ class UserViewModel(
     private val _estado = MutableStateFlow(UserState())
     val estado: StateFlow<UserState> = _estado.asStateFlow()
 
-    fun onCorreoChange(correo: String) = _estado.update { it.copy(email = correo) }
-    fun onClaveChange(clave: String) = _estado.update { it.copy(password = clave) }
+    fun onCorreoChange(correo: String) {
+        _estado.update {
+            it.copy(
+                email = correo,
+                errores = it.errores.copy(email = null)
+            )
+        }
+    }
+
+    fun onClaveChange(clave: String) {
+        _estado.update {
+            it.copy(
+                password = clave,
+                errores = it.errores.copy(password = null)
+            )
+        }
+    }
     fun onNombreChange(nombre: String) = _estado.update { it.copy(name = nombre) }
     fun onTerminosChange(acepta: Boolean) = _estado.update { it.copy(aceptaTerminos = acepta) }
+
     fun setFoto(uri: Uri) = _estado.update { it.copy(fotoUri = uri) }
     fun limpiarMensaje() = _estado.update { it.copy(mensaje = null) }
     fun resetLoginStatus() = _estado.update { it.copy(loginSuccess = false) }
@@ -73,7 +89,12 @@ class UserViewModel(
                         )
                         _estado.update { it.copy(loginSuccess = true, isLoading = false) }
                     } else {
-                        _estado.update { it.copy(mensaje = "Respuesta inesperada del servidor.", isLoading = false) }
+                        _estado.update {
+                            it.copy(
+                                mensaje = "Respuesta inesperada del servidor.",
+                                isLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { error ->
@@ -110,7 +131,12 @@ class UserViewModel(
                         )
                         _estado.update { it.copy(loginSuccess = true, isLoading = false) }
                     } else {
-                        _estado.update { it.copy(mensaje = "Email o contraseña incorrectos.", isLoading = false) }
+                        _estado.update {
+                            it.copy(
+                                mensaje = "Email o contraseña incorrectos.",
+                                isLoading = false
+                            )
+                        }
                     }
                 }
                 .onFailure { error ->
@@ -126,18 +152,25 @@ class UserViewModel(
     }
 
     private fun validarRegistro(): Boolean {
-        //1. Limpia y normaliza los datos ANTES de usarlos.
         val emailLimpio = estado.value.email.trim().lowercase()
         val nombreLimpio = estado.value.name.trim()
 
-        // 2. Realiza la validación sobre los datos ya limpios.
         val errores = UserState.UserErrors(
-            name = if (nombreLimpio.isBlank()) "El nombre no puede estar vacío" else null,
-            // 3. Validación de email más robusta.
-            email = if (!android.util.Patterns.EMAIL_ADDRESS.matcher(emailLimpio).matches()) {
-                "El formato del correo es inválido"
-            } else null,
-            password = if (estado.value.password.length < 6) "La contraseña debe tener al menos 6 caracteres" else null
+            name = when {
+                nombreLimpio.isBlank() -> "El nombre es obligatorio"
+                nombreLimpio.length < 3 -> "El nombre debe tener al menos 3 caracteres"
+                else -> null
+            },
+            email = when {
+                emailLimpio.isBlank() -> "El correo es obligatorio"                    // ← NUEVO: campo vacío
+                !android.util.Patterns.EMAIL_ADDRESS.matcher(emailLimpio).matches() -> "El formato del correo es inválido"
+                else -> null
+            },
+            password = when {
+                estado.value.password.isBlank() -> "La contraseña es obligatoria"       // ← NUEVO: campo vacío
+                estado.value.password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+                else -> null
+            }
         )
 
         _estado.update { it.copy(errores = errores) }
@@ -146,12 +179,29 @@ class UserViewModel(
             _estado.update { it.copy(mensaje = "Debe aceptar los términos y condiciones") }
             return false
         }
-
-        // 4. Comprueba que no haya errores de validación.
         return errores.name == null && errores.email == null && errores.password == null
     }
 
     private fun validarLogin(): Boolean {
-        return estado.value.email.isNotBlank() && estado.value.password.isNotBlank()
+        val emailLimpio = estado.value.email.trim().lowercase()
+        val password = estado.value.password
+
+        val errores = UserState.UserErrors(
+            email = when {
+                emailLimpio.isBlank() -> "El correo es obligatorio"
+                !android.util.Patterns.EMAIL_ADDRESS.matcher(emailLimpio)
+                    .matches() -> "El correo de contener '@'"
+
+                else -> null
+            },
+            password = when {
+                password.isBlank() -> "La contraseña es obligatoria"
+                password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+                else -> null
+            }
+        )
+
+        _estado.update { it.copy(errores = errores) }
+        return errores.email == null && errores.password == null
     }
 }
