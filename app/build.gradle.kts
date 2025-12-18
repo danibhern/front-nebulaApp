@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("kapt")
-    // El plugin de Hilt es necesario para tu app principal, así que se queda.
     id("com.google.dagger.hilt.android")
 }
 
@@ -66,6 +65,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.runtime:runtime-saveable")
     implementation("androidx.compose.material:material-icons-extended")
@@ -80,22 +80,22 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.camera:camera-core:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    // ================== ¡ESTE ES EL CAMBIO CLAVE! ==================
+    // Se baja la versión de camera-view para evitar el conflicto de 'Future'.
+    implementation("androidx.camera:camera-view:1.2.3")
+    // =============================================================
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-video:1.3.4")
     implementation("androidx.camera:camera-extensions:1.3.4")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.3")
+
 
     // --- DEPENDENCIAS DE HILT (Para la app principal, se quedan) ---
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-
-    // --- DEPENDENCIAS DE HILT PARA TESTS (ELIMINADAS) ---
-    // Ya no las necesitamos, así que las quitamos para evitar conflictos.
-    // androidTestImplementation("com.google.dagger:hilt-android-testing:2.48")
-    // kaptAndroidTest("com.google.dagger:hilt-compiler:2.48")
 
     // --- OTRAS DEPENDENCIAS ---
     implementation(libs.firebase.appdistribution.gradle)
@@ -105,7 +105,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
-    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+
 
     // --- TESTS UNITARIOS ---
     testImplementation("junit:junit:4.13.2")

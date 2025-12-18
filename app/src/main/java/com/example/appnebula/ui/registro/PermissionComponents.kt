@@ -1,58 +1,42 @@
-package com.example.appnebula.registro // Asegúrate de que el paquete sea el correcto
+package com.example.appnebula.ui.registro
 
 import android.Manifest
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
-/**
- * Un Composable que gestiona la solicitud del permiso de la cámara
- * y muestra un botón para una acción específica.
- *
- * @param onPermissionGranted La acción a ejecutar cuando el permiso es concedido.
- */
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun FeatureThatRequiresCameraPermission(
     onPermissionGranted: () -> Unit,
 ) {
-    // 1. Declarar el estado del permiso que necesitamos (CÁMARA)
-    val cameraPermissionState = rememberPermissionState(
-        Manifest.permission.CAMERA
+    val context = LocalContext.current
+
+    // No usamos 'rememberPermissionState', sino el lanzador de resultados de actividad.
+    // Esto es más robusto y es la forma moderna recomendada.
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted: Boolean ->
+            if (isGranted) {
+                // Permiso concedido por el usuario, ejecutamos la acción.
+                onPermissionGranted()
+            } else {
+                // El usuario denegó el permiso.
+                // Aquí podrías mostrar un Snackbar o un Toast informando al usuario.
+            }
+        }
     )
 
-    // 2. Comprobar el estado del permiso
-    if (cameraPermissionState.status.isGranted) {
-        // Si el permiso YA está concedido, mostramos el botón final.
-        Button(onClick = onPermissionGranted) {
-            Text("Añadir Foto de Perfil")
-        }
-    } else {
-        // Si el permiso NO está concedido, mostramos un botón que lo solicitará.
-        Column {
-            val textToShow = if (cameraPermissionState.status.shouldShowRationale) {
-                // Texto a mostrar si el usuario ya denegó el permiso una vez.
-                // Es buena práctica explicar por qué lo necesitas.
-                "Para añadir una foto a tu perfil, la aplicación necesita acceso a la cámara. Por favor, acepta el permiso."
-            } else {
-                // Texto para la primera vez que se pide el permiso.
-                "Pulsa para activar el acceso a la cámara y añadir tu foto."
-            }
-
-            Text(textToShow)
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                Text("Solicitar Permiso")
-            }
-        }
+    // Simplemente mostramos un botón. Al hacer clic, se solicitará el permiso.
+    // Si el permiso ya está concedido, el sistema no volverá a preguntar
+    // y la lógica de onResult se ejecutará indirectamente a través del flujo de la cámara.
+    // En nuestro caso, el botón siempre abrirá la cámara o pedirá el permiso si es necesario.
+    Button(onClick = {
+        // Lanzamos la solicitud del permiso de la cámara.
+        launcher.launch(Manifest.permission.CAMERA)
+    }) {
+        Text("Añadir Foto de Perfil")
     }
 }

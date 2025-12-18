@@ -1,3 +1,4 @@
+
 package com.example.appnebula
 
 import android.app.Application
@@ -38,6 +39,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+
+// --- IMPORTS PARA LA SOLUCIÓN MANUAL ---
+import com.example.appnebula.data.AuthRepository
+import com.example.appnebula.data.SessionManager
+import com.example.appnebula.viewmodel.UserViewModel
+import com.example.appnebula.viewmodel.UserViewModelFactory
+// ---
 import com.example.appnebula.ui.cart.CartScreen
 import com.example.appnebula.ui.catalog.CatalogScreen
 import com.example.appnebula.ui.contact.ContactScreen
@@ -72,7 +80,22 @@ fun MainScreenView() {
     val context = LocalContext.current
     val application = context.applicationContext as Application
 
+    // --- INSTANCIACIÓN DE VIEWMODELS CON FACTORIES ---
     val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(application))
+
+    // 1. Crear dependencias para UserViewModel
+    val authRepository = AuthRepository(context)
+    // --- ¡¡AQUÍ ESTÁ LA CORRECCIÓN!! ---
+    // Le pasamos el 'context' que SessionManager necesita.
+    val sessionManager = SessionManager(context)
+    // --- FIN DE LA CORRECCIÓN ---
+
+    // 2. Crear la Factory para UserViewModel
+    val userViewModelFactory = UserViewModelFactory(authRepository, sessionManager)
+
+    // 3. Obtener la instancia de UserViewModel
+    val userViewModel: UserViewModel = viewModel(factory = userViewModelFactory)
+    // ---
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -82,6 +105,7 @@ fun MainScreenView() {
     Scaffold(
         topBar = {
             if (showBars) {
+                // ... (código de TopAppBar sin cambios)
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -128,9 +152,7 @@ fun MainScreenView() {
             startDestination = "splash",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("splash") {
-                SplashScreen(navController = navController)
-            }
+            composable("splash") { SplashScreen(navController = navController) }
             composable(BottomNavItem.Home.route) {
                 HomeScreen(
                     onNavigateToCatalog = { navController.navigate(BottomNavItem.Catalog.route) },
@@ -142,29 +164,26 @@ fun MainScreenView() {
                 CatalogScreen(
                     catalogViewModel = catalogViewModel,
                     cartViewModel = cartViewModel,
-                    onCartClick = {
-                        navController.navigate("cart")
-                    }
+                    onCartClick = { navController.navigate("cart") }
                 )
             }
-            composable(BottomNavItem.Reserve.route) {
-                ReservaScreen(navController = navController)
-            }
-            composable(BottomNavItem.Contact.route) {
-                ContactScreen(navController = navController)
-            }
+            composable(BottomNavItem.Reserve.route) { ReservaScreen(navController = navController) }
+            composable(BottomNavItem.Contact.route) { ContactScreen(navController = navController) }
+
+            // --- LLAMADAS A PANTALLAS ---
             composable("login") {
                 LoginScreen(navController = navController)
             }
             composable("register") {
-                RegisterScreen(navController = navController)
+                // Pasamos el UserViewModel que creamos arriba a RegisterScreen.
+                RegisterScreen(navController = navController, viewModel = userViewModel)
             }
+            // ---
+
             composable("cart") {
                 CartScreen(
                     cartViewModel = cartViewModel,
-                    onCheckout = { total ->
-                        navController.navigate("payment/${total.toFloat()}")
-                    }
+                    onCheckout = { total -> navController.navigate("payment/${total.toFloat()}") }
                 )
             }
             composable(
@@ -172,15 +191,13 @@ fun MainScreenView() {
                 arguments = listOf(navArgument("totalAmount") { type = NavType.FloatType })
             ) { backStackEntry ->
                 val total = backStackEntry.arguments?.getFloat("totalAmount") ?: 0.0f
-                PaymentScreen(
-                    navController = navController,
-                    totalAmount = total.toDouble()
-                )
+                PaymentScreen(navController = navController, totalAmount = total.toDouble())
             }
         }
     }
 }
 
+// El resto del archivo (BottomNavigationBar, etc.) no necesita cambios.
 @Composable
 fun BottomNavigationBar(navController: NavHostController, currentRoute: String?) {
     val items = listOf(
@@ -189,18 +206,10 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
         BottomNavItem.Reserve,
         BottomNavItem.Contact
     )
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant
-    ) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
         items.forEach { item ->
             NavigationBarItem(
-                icon = {
-                    Icon(
-                        item.icon,
-                        contentDescription = item.title,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
+                icon = { Icon(item.icon, contentDescription = item.title, modifier = Modifier.size(24.dp)) },
                 label = { Text(text = item.title) },
                 selected = currentRoute == item.route,
                 onClick = {
