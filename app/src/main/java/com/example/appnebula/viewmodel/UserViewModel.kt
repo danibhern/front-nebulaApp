@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 data class UserState(
     val name: String = "",
     val email: String = "",
@@ -31,16 +32,15 @@ data class UserState(
     )
 }
 
-// --- ¡CORRECCIONES AQUÍ! ---
-class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
+open class UserViewModel(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(UserState())
-    val estado: StateFlow<UserState> = _estado.asStateFlow()
+    open val estado: StateFlow<UserState> = _estado.asStateFlow()
 
-    fun onCorreoChange(correo: String) {
+    open fun onCorreoChange(correo: String) {
         _estado.update {
             it.copy(
                 email = correo,
@@ -49,7 +49,7 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
         }
     }
 
-    fun onClaveChange(clave: String) {
+    open fun onClaveChange(clave: String) {
         _estado.update {
             it.copy(
                 password = clave,
@@ -57,16 +57,12 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
             )
         }
     }
+    open fun onNombreChange(nombre: String) = _estado.update { it.copy(name = nombre) }
+    open fun onTerminosChange(acepta: Boolean) = _estado.update { it.copy(aceptaTerminos = acepta) }
 
-    fun onNombreChange(nombre: String) = _estado.update { it.copy(name = nombre) }
-    fun onTerminosChange(acepta: Boolean) = _estado.update { it.copy(aceptaTerminos = acepta) }
-    fun onFotoChange(uri: Uri) = _estado.update { it.copy(fotoUri = uri) }
+    fun setFoto(uri: Uri) = _estado.update { it.copy(fotoUri = uri) }
     fun limpiarMensaje() = _estado.update { it.copy(mensaje = null) }
     fun resetLoginStatus() = _estado.update { it.copy(loginSuccess = false) }
-
-    fun mostrarError(mensaje: String) {
-        _estado.update { it.copy(mensaje = mensaje) }
-    }
 
     fun registrarUsuario() {
         if (!validarRegistro()) return
@@ -83,7 +79,6 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
                 password = estado.value.password
             )
 
-            // ESTA LLAMADA CAUSABA EL CRASH PORQUE authRepository ERA NULL
             authRepository.register(userDto)
                 .onSuccess { userResponse ->
                     if (userResponse?.token != null && userResponse.id != null && userResponse.email != null) {
@@ -167,12 +162,12 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
                 else -> null
             },
             email = when {
-                emailLimpio.isBlank() -> "El correo es obligatorio"
+                emailLimpio.isBlank() -> "El correo es obligatorio"                    // ← NUEVO: campo vacío
                 !android.util.Patterns.EMAIL_ADDRESS.matcher(emailLimpio).matches() -> "El formato del correo es inválido"
                 else -> null
             },
             password = when {
-                estado.value.password.isBlank() -> "La contraseña es obligatoria"
+                estado.value.password.isBlank() -> "La contraseña es obligatoria"       // ← NUEVO: campo vacío
                 estado.value.password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
                 else -> null
             }
@@ -196,6 +191,7 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
                 emailLimpio.isBlank() -> "El correo es obligatorio"
                 !android.util.Patterns.EMAIL_ADDRESS.matcher(emailLimpio)
                     .matches() -> "El correo de contener '@'"
+
                 else -> null
             },
             password = when {
@@ -204,10 +200,6 @@ class UserViewModel( // 2. Le dice a Hilt cómo inyectar las dependencias.
                 else -> null
             }
         )
-
-        fun mostrarError(mensaje: String) {
-            _estado.update { it.copy(mensaje = mensaje) }
-        }
 
         _estado.update { it.copy(errores = errores) }
         return errores.email == null && errores.password == null

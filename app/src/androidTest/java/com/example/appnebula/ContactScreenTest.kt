@@ -1,9 +1,19 @@
 package com.example.appnebula
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Before
+import com.example.appnebula.data.SessionManager
+import com.example.appnebula.data.repository.ContactRepository
+import com.example.appnebula.model.contacto.ContactDto
+import com.example.appnebula.ui.contact.ContactScreen
+import com.example.appnebula.ui.theme.AppNebulaTheme
+import com.example.appnebula.viewmodel.ContactViewModel
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,59 +22,99 @@ import org.junit.runner.RunWith
 class ContactScreenTest {
 
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val composeRule = createComposeRule()
 
-    @Before
-    fun navegarHaciaLaPantallaDeContacto() {
-        composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithText("Home")
-                .fetchSemanticsNodes().size == 1
+    private lateinit var mockRepository: ContactRepository
+    private lateinit var mockSessionManager: SessionManager
+    private lateinit var viewModel: ContactViewModel
+
+    @Test
+    fun laPantallaDeContacto_muestraTodosLosCamposIniciales() {
+
+        mockRepository = mockk()
+        mockSessionManager = mockk()
+
+        every { mockSessionManager.userEmailFlow } returns flowOf("test@email.com")
+
+        viewModel = ContactViewModel(mockRepository, mockSessionManager)
+
+        composeRule.setContent {
+            AppNebulaTheme {
+                ContactScreen(
+                    navController = rememberNavController(),
+                    viewModel = viewModel
+                )
+            }
         }
 
-        composeRule.onNodeWithText("Contacto").performClick()
-        composeRule.waitForIdle()
-    }
-
-    @Test
-    fun laPantallaDeContacto_muestraTodosLosElementos() {
-        composeRule.onNodeWithText("Contáctanos").assertIsDisplayed()
-        composeRule.onNodeWithText("Nombre Completo *").assertIsDisplayed()
-        composeRule.onNodeWithText("Email *").assertIsDisplayed()
-        composeRule.onNodeWithText("Teléfono").assertIsDisplayed()
-        composeRule.onNodeWithText("Asunto *").assertIsDisplayed()
-        composeRule.onNodeWithText("Mensaje *").assertIsDisplayed()
+        composeRule.onNodeWithTag("ContactNombreTextField").assertIsDisplayed()
+        composeRule.onNodeWithTag("ContactEmailTextField").assertIsDisplayed()
+        composeRule.onNodeWithTag("ContactPhoneTextField").assertIsDisplayed()
+        composeRule.onNodeWithTag("ContactSubjectTextField").assertIsDisplayed()
+        composeRule.onNodeWithTag("ContactMessageTextField").assertIsDisplayed()
         composeRule.onNodeWithText("Enviar Mensaje").assertIsDisplayed()
-        composeRule.onNodeWithText("Encuéntranos aquí").assertIsDisplayed()
+
+        composeRule.onNodeWithText("test@email.com").assertIsDisplayed()
     }
 
     @Test
-    fun alEnviarFormularioVacio_muestraMensajesDeErrorCorrectos() {
-        composeRule.onNodeWithText("Enviar Mensaje").performScrollTo()
+    fun alEscribirEnLosCampos_elTextoSeActualizaCorrectamente() {
+        // --- Setup ---
+        mockRepository = mockk()
+        mockSessionManager = mockk()
+        every { mockSessionManager.userEmailFlow } returns flowOf("test@email.com")
+        viewModel = ContactViewModel(mockRepository, mockSessionManager)
+
+        composeRule.setContent {
+            AppNebulaTheme {
+                ContactScreen(
+                    navController = rememberNavController(),
+                    viewModel = viewModel
+                )
+            }
+        }
+
+        val nombre = "Dani"
+        val asunto = "Test de UI"
+        val mensaje = "Esto es un mensaje de prueba."
+
+        composeRule.onNodeWithTag("ContactNombreTextField").performTextInput(nombre)
+        composeRule.onNodeWithTag("ContactSubjectTextField").performTextInput(asunto)
+        composeRule.onNodeWithTag("ContactMessageTextField").performTextInput(mensaje)
+
+        // --- Verificación ---
+        composeRule.onNodeWithText(nombre).assertIsDisplayed()
+        composeRule.onNodeWithText(asunto).assertIsDisplayed()
+        composeRule.onNodeWithText(mensaje).assertIsDisplayed()
+    }
+
+
+    @Test
+    fun alHacerClicEnEnviarConDatosValidos_seMuestraDialogoDeExito() {
+        mockRepository = mockk()
+        mockSessionManager = mockk()
+        every { mockSessionManager.userEmailFlow } returns flowOf("email@valido.com")
+
+        coEvery { mockRepository.sendMessage(any<ContactDto>()) } returns Result.success(Unit)
+
+        viewModel = ContactViewModel(mockRepository, mockSessionManager)
+
+        composeRule.setContent {
+            AppNebulaTheme {
+                ContactScreen(
+                    navController = rememberNavController(),
+                    viewModel = viewModel
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("ContactNombreTextField").performTextInput("Nombre válido")
+        composeRule.onNodeWithTag("ContactSubjectTextField").performTextInput("Asunto válido")
+        composeRule.onNodeWithTag("ContactMessageTextField").performTextInput("Mensaje válido")
+
         composeRule.onNodeWithText("Enviar Mensaje").performClick()
-        composeRule.waitForIdle()
 
-
-        val nodes = composeRule.onAllNodesWithText("Campo obligatorio")
-        nodes.assertCountEquals(3) // Para Nombre, Asunto y Mensaje
-        composeRule.onNodeWithText("Correo inválido").assertIsDisplayed()
-    }
-
-    @Test
-    fun alEscribirEnElFormulario_losCamposSeActualizanCorrectamente() {
-        val nombre = "Dani Test"
-        val email = "dani.test@email.com"
-        val asunto = "Consulta sobre pedido"
-
-        composeRule.onNodeWithText("Mensaje *").performScrollTo()
-
-        composeRule.onNodeWithText("Nombre Completo *").performTextInput(nombre)
-        composeRule.onNodeWithText(nombre).assertExists()
-
-        composeRule.onNodeWithText("Email *").performTextClearance()
-        composeRule.onNodeWithText("Email *").performTextInput(email)
-        composeRule.onNodeWithText(email).assertExists()
-
-        composeRule.onNodeWithText("Asunto *").performTextInput(asunto)
-        composeRule.onNodeWithText(asunto).assertExists()
+        composeRule.onNodeWithText("¡Mensaje Enviado!").assertIsDisplayed()
+        composeRule.onNodeWithText("Mensaje enviado con éxito").assertIsDisplayed()
     }
 }

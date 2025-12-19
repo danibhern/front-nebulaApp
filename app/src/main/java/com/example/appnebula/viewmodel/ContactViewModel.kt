@@ -31,13 +31,13 @@ data class ContactEstado(
     val feedbackMessage: String? = null
 )
 
-class ContactViewModel(
+open class ContactViewModel(
     private val repository: ContactRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(ContactEstado())
-    val estado = _estado.asStateFlow()
+    open val estado = _estado.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -48,11 +48,11 @@ class ContactViewModel(
         }
     }
 
-    fun onNombreChange(value: String) = _estado.update { it.copy(nombre = value) }
-    fun onEmailChange(value: String) = _estado.update { it.copy(email = value) }
-    fun onTelefonoChange(value: String) = _estado.update { it.copy(telefono = value) }
-    fun onAsuntoChange(value: String) = _estado.update { it.copy(asunto = value) }
-    fun onMensajeChange(value: String) = _estado.update { it.copy(mensajeTexto = value) }
+    open fun onNombreChange(value: String) = _estado.update { it.copy(nombre = value) }
+    open fun onEmailChange(value: String) = _estado.update { it.copy(email = value) }
+    open fun onTelefonoChange(value: String) = _estado.update { it.copy(telefono = value) }
+    open fun onAsuntoChange(value: String) = _estado.update { it.copy(asunto = value) }
+    open fun onMensajeChange(value: String) = _estado.update { it.copy(mensajeTexto = value) }
 
     private fun validarFormulario(): Boolean {
         val estadoActual = _estado.value
@@ -66,7 +66,7 @@ class ContactViewModel(
         return listOfNotNull(errores.nombre, errores.email, errores.asunto, errores.mensaje).isEmpty()
     }
 
-    fun sendMessage() {
+    open fun sendMessage() {
         if (!validarFormulario()) return
 
         viewModelScope.launch {
@@ -105,7 +105,7 @@ class ContactViewModel(
         }
     }
 
-    fun resetStatus() {
+    open fun resetStatus() {
         _estado.update {
             it.copy(
                 isSuccess = false,
