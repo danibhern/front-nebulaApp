@@ -131,16 +131,12 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             CartItem(
                 itemId = apiItem.itemId,
                 product = Product(
-                    // ERROR 2 CORREGIDO:
-                    // No se necesita conversión. `apiItem.productId` (String) se asigna a `Product.id` (String).
                     id = apiItem.productId,
                     name = apiItem.productName,
-                    // ERROR 3 CORREGIDO:
-                    // No se necesita conversión. `apiItem.price` (Int) se asigna a `Product.price` (Int).
                     price = apiItem.price,
                     imageUrl = apiItem.imageUrl ?: "",
-                    description = "", // Valor por defecto
-                    category = ""       // Valor por defecto
+                    description = "",
+                    category = ""
                 ),
                 quantity = apiItem.quantity
             )

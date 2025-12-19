@@ -40,7 +40,6 @@ fun CameraView(
 
     LaunchedEffect(Unit) {
         val cameraProvider = try {
-            // Se llama a la nueva función
             context.getCameraProvider()
         } catch (e: Exception) {
             onError("No se pudo obtener el proveedor de cámara: ${e.message}")
@@ -108,10 +107,6 @@ private fun takePhoto(
         }
     )
 }
-
-// --- ¡¡FUNCIÓN ACTUALIZADA!! ---
-// Esta nueva versión es más corta y usa la función de extensión .await()
-// que viene con las dependencias que ya tienes.
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider {
     return ProcessCameraProvider.getInstance(this).await()
 }

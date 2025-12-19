@@ -90,6 +90,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.3")
+    implementation("com.google.maps.android:maps-compose:4.3.3")
 
 
     // --- DEPENDENCIAS DE HILT (Para la app principal, se quedan) ---

@@ -291,7 +291,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Registro minimalista
                 Row(
                     modifier = Modifier
                         .clickable { navController.navigate("register") }

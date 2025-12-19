@@ -90,7 +90,6 @@ fun ReservaScreen(navController: NavController) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 🌌 IMAGEN NEBULA CENTRADA
                 Image(
                     painter = painterResource(id = R.drawable.nebula),
                     contentDescription = "Nebula Logo",
@@ -118,7 +117,6 @@ fun ReservaScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // FORMULARIO EN CARD FLOTANTE
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(32.dp),

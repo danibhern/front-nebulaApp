@@ -115,9 +115,6 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 }
-
-// --- AÑADE ESTA CLASE AQUÍ ---
-// Esta es la Factory que necesita tu MainActivity
 class CatalogViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CatalogViewModel::class.java)) {

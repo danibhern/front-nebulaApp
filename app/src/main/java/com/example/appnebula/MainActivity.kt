@@ -1,4 +1,3 @@
-
 package com.example.appnebula
 
 import android.app.Application
@@ -39,13 +38,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-
-// --- IMPORTS PARA LA SOLUCIÓN MANUAL ---
 import com.example.appnebula.data.AuthRepository
 import com.example.appnebula.data.SessionManager
 import com.example.appnebula.viewmodel.UserViewModel
 import com.example.appnebula.viewmodel.UserViewModelFactory
-// ---
 import com.example.appnebula.ui.cart.CartScreen
 import com.example.appnebula.ui.catalog.CatalogScreen
 import com.example.appnebula.ui.contact.ContactScreen
@@ -60,6 +56,9 @@ import com.example.appnebula.viewmodel.CartViewModel
 import com.example.appnebula.viewmodel.CartViewModelFactory
 import com.example.appnebula.viewmodel.CatalogViewModel
 import com.example.appnebula.viewmodel.CatalogViewModelFactory
+import com.example.appnebula.data.repository.ContactRepository
+import com.example.appnebula.viewmodel.ContactViewModel
+import com.example.appnebula.viewmodel.ContactViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,19 +82,20 @@ fun MainScreenView() {
     // --- INSTANCIACIÓN DE VIEWMODELS CON FACTORIES ---
     val cartViewModel: CartViewModel = viewModel(factory = CartViewModelFactory(application))
 
-    // 1. Crear dependencias para UserViewModel
     val authRepository = AuthRepository(context)
-    // --- ¡¡AQUÍ ESTÁ LA CORRECCIÓN!! ---
-    // Le pasamos el 'context' que SessionManager necesita.
     val sessionManager = SessionManager(context)
-    // --- FIN DE LA CORRECCIÓN ---
 
-    // 2. Crear la Factory para UserViewModel
     val userViewModelFactory = UserViewModelFactory(authRepository, sessionManager)
-
-    // 3. Obtener la instancia de UserViewModel
     val userViewModel: UserViewModel = viewModel(factory = userViewModelFactory)
-    // ---
+
+    // --- BLOQUE AÑADIDO PARA CONTACTVIEWMODEL ---
+    val contactViewModel: ContactViewModel = viewModel(
+        factory = ContactViewModelFactory(
+            ContactRepository(application),
+            sessionManager
+        )
+    )
+    // --- FIN DEL BLOQUE AÑADIDO ---
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -105,7 +105,6 @@ fun MainScreenView() {
     Scaffold(
         topBar = {
             if (showBars) {
-                // ... (código de TopAppBar sin cambios)
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,17 +167,19 @@ fun MainScreenView() {
                 )
             }
             composable(BottomNavItem.Reserve.route) { ReservaScreen(navController = navController) }
-            composable(BottomNavItem.Contact.route) { ContactScreen(navController = navController) }
 
-            // --- LLAMADAS A PANTALLAS ---
+            // --- LÍNEA MODIFICADA PARA CONTACTSCREEN ---
+            composable(BottomNavItem.Contact.route) {
+                ContactScreen(navController = navController, viewModel = contactViewModel)
+            }
+            // --- FIN DE LA LÍNEA MODIFICADA ---
+
             composable("login") {
                 LoginScreen(navController = navController)
             }
             composable("register") {
-                // Pasamos el UserViewModel que creamos arriba a RegisterScreen.
                 RegisterScreen(navController = navController, viewModel = userViewModel)
             }
-            // ---
 
             composable("cart") {
                 CartScreen(
@@ -197,7 +198,6 @@ fun MainScreenView() {
     }
 }
 
-// El resto del archivo (BottomNavigationBar, etc.) no necesita cambios.
 @Composable
 fun BottomNavigationBar(navController: NavHostController, currentRoute: String?) {
     val items = listOf(

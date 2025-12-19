@@ -82,7 +82,6 @@ class ContactScreenTest {
         composeRule.onNodeWithTag("ContactSubjectTextField").performTextInput(asunto)
         composeRule.onNodeWithTag("ContactMessageTextField").performTextInput(mensaje)
 
-        // --- Verificación ---
         composeRule.onNodeWithText(nombre).assertIsDisplayed()
         composeRule.onNodeWithText(asunto).assertIsDisplayed()
         composeRule.onNodeWithText(mensaje).assertIsDisplayed()
